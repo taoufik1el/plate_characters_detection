@@ -9,22 +9,26 @@ import random
 from os import listdir
 
 
+bg_path = 'data/backgrounds'
+kharbocha_path = 'data/khrbocha'
+ha_path = 'data/ha'
+
 BACKGROUNDS = []
-bg_path = '../input/numbers-and-letters/images_for_generation/bg'
+
 for f in listdir(bg_path):
-    im = cv2.imread(join(bg_path, f))
+    im = cv2.imread(join(bg_path, f))#cv2.imread(bg_path + '/' +f)#
     im = cv2.resize(im, (450, 170))
     BACKGROUNDS.append(im)
 
-ARABIC_FONTS = ['../input/fonts/Amiri', '../input/fonts/Lateef', '../input/fonts/Scheherazade_New',
-                '../input/fonts/Aref_Ruqaa',
-                '../input/fonts/Harmattan',
+ARABIC_FONTS = ['data/Fonts/Amiri', 'data/fonts/Lateef', 'data/fonts/Scheherazade_New',
+                'data/fonts/Aref_Ruqaa',
+                'data/fonts/Harmattan',
                 ]
-LATIN_FONTS = ['../input/fonts/Barlow', '../input/fonts/Be_Vietnam_Pro', '../input/fonts/Bebas_Neue',
-               '../input/fonts/Fira_Sans',
-               '../input/fonts/Montserrat', '../input/fonts/Open_Sans', '../input/fonts/Anton',
-               '../input/fonts/License-Plate',
-               '../input/fonts/Teko', '../input/fonts/Barlow_Condensed',
+LATIN_FONTS = ['data/fonts/Barlow', 'data/fonts/Be_Vietnam_Pro', 'data/fonts/Bebas_Neue',
+               'data/fonts/Fira_Sans',
+               'data/fonts/Montserrat', 'data/fonts/Open_Sans', 'data/fonts/Anton',
+               'data/fonts/License-Plate',
+               'data/fonts/Teko', 'data/fonts/Barlow_Condensed',
                ]
 
 ARABIC_FONTS_ttf = []
@@ -64,7 +68,6 @@ for i in LABELS:
                 x1, y1, w, h = cv2.boundingRect(img_binary)
                 CHAR_IMGS[i].append(img[y1 - 3:y1 + h + 3, x1 - 3:x1 + w + 3])
     elif LABELS[i] == 'HA':
-        ha_path = '../input/numbers-and-letters/images_for_generation/ha'
         for f in listdir(ha_path):
             im = cv2.imread(join(ha_path, f))
             CHAR_IMGS[i].append(im)
@@ -84,9 +87,9 @@ for i in LABELS:
 
 FALSE_CHARS = []
 for x in ['|', '|', '|', '|', '|', '|', '-', '*']:
-    for fontpath in ['../input/fonts/Barlow/Barlow-Regular.ttf',
-                     '../input/fonts/Barlow_Condensed/BarlowCondensed-Light.ttf',
-                     '../input/fonts/Teko/Teko-Bold.ttf']:
+    for fontpath in ['data/fonts/Barlow/Barlow-Regular.ttf',
+                     'data/fonts/Barlow_Condensed/BarlowCondensed-Light.ttf',
+                     'data/fonts/Teko/Teko-Bold.ttf']:
         frame = np.ones((200, 400, 3), dtype=np.uint8)*255
         font = ImageFont.truetype(fontpath, 150)
         img_pil = Image.fromarray(frame)
@@ -94,7 +97,6 @@ for x in ['|', '|', '|', '|', '|', '|', '-', '*']:
         draw.text((175, 80), x, font=font, fill=(0,0,0), anchor='mm')
         FALSE_CHARS.append(np.array(img_pil)[25:150, 150:200])
 
-kharbocha_path = '../input/numbers-and-letters'
 KHARBOCHA = [cv2.imread(join(kharbocha_path, p)) for p in listdir(kharbocha_path) if 'khrbocha' in p]
 
 
