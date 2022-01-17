@@ -6,8 +6,8 @@ import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input
 
-from model import yolo_body, tiny_yolo_body, define_loss
-from utils import DataGenerator, train_model
+from yolo3.model import yolo_body, tiny_yolo_body, define_loss
+from yolo3.utils import DataGenerator, train_model
 
 
 def get_anchors(anchors_line):
@@ -69,7 +69,7 @@ def train(images: np.array, df: pd.DataFrame):
                                         num_classes=num_classes,
                                         batch_size=32, input_shape=input_shape, shuffle=True)
 
-    loss_object = define_loss(anchors, num_classes, ignore_thresh=.5, print_loss=False)
+    loss_object = define_loss(anchors, num_classes, ignore_thresh=.5)
 
     # train_model(model,5, 0.001, loss_object, train_data_generator, test_data_generator, reduce_lr, early_stopping)
 
