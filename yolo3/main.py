@@ -5,11 +5,9 @@ import pandas as pd
 import numpy as np
 import tensorflow.keras.backend as K
 from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
 
-from model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_loss
-from utils import get_random_data
+from model import yolo_body, tiny_yolo_body, define_loss
+from utils import DataGenerator, train_model
 
 
 def get_anchors(anchors_line):
@@ -17,8 +15,7 @@ def get_anchors(anchors_line):
     return np.array(anchors).reshape(-1, 2)
 
 
-def create_model(input_shape, anchors, num_classes, load_pretrained=False, freeze_body=2):
-    '''create the training model'''
+def create_model(anchors, num_classes):
     K.clear_session()  # get a new session
     image_input = Input(shape=(None, None, 1))
     num_anchors = len(anchors)
@@ -29,8 +26,7 @@ def create_model(input_shape, anchors, num_classes, load_pretrained=False, freez
     return model_body
 
 
-def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False, freeze_body=2):
-    '''create the training model, for Tiny YOLOv3'''
+def create_tiny_model(anchors, num_classes):
     K.clear_session()  # get a new session
     image_input = Input(shape=(None, None, 1))
     num_anchors = len(anchors)
@@ -41,23 +37,18 @@ def create_tiny_model(input_shape, anchors, num_classes, load_pretrained=False, 
     return model_body
 
 
-def _main():
-    anchor_line = '80,80, 80,50, 50,80, 50,50, 80,20, 20,80, 50,20, 20,50, 20,20'
+def train(images: np.array, df: pd.DataFrame):
     anchors = np.array([[59, 23], [74, 28], [79, 47], [89, 22], [96, 32], [118, 58], [124, 39], [125, 22], [58, 36]])
-    # get_anchors(anchor_line)
 
     num_classes = 22
 
     input_shape = (128, 416)  # multiple of 32, hw
-    yolo_loss = define_loss(anchors, num_classes, ignore_thresh=.5, print_loss=False)
     is_tiny_version = len(anchors) == 6  # default setting
 
     if is_tiny_version:
-        model = create_tiny_model(input_shape, anchors, num_classes,
-                                  freeze_body=2)
+        model = create_tiny_model(anchors, num_classes)
     else:
-        model = create_model(input_shape, anchors, num_classes,
-                             freeze_body=2)  # make sure you know what you freeze
+        model = create_model(anchors, num_classes)  # make sure you know what you freeze
 
     reduce_lr = {'factor': 0.5, 'patience': 3}
     early_stopping = {'patience': 5}
@@ -92,5 +83,7 @@ def _main():
 
 
 if __name__ == '__main__':
-    model = _main()
+    df = pd.read_csv('fileeeeeeee')
+    image = pd.load('fileeeee')
+    model = train(image, df)
     model.save_weights("yolo_chars")

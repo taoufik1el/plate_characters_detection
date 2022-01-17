@@ -1,8 +1,12 @@
 from functools import reduce
 
+import cv2
 import numpy as np
 import random
+import tensorflow as tf
 from tensorflow.keras.utils import Sequence
+
+from model import preprocess_true_boxes
 
 
 def compose(*funcs):
@@ -16,11 +20,11 @@ def compose(*funcs):
         raise ValueError('Composition of empty sequence not supported.')
 
 
-def box_transform(B, matrix):
-    P1 = np.matmul(matrix, np.array([B[1], B[0], 1]))
-    P2 = np.matmul(matrix, np.array([B[1], B[2], 1]))
-    P3 = np.matmul(matrix, np.array([B[3], B[0], 1]))
-    P4 = np.matmul(matrix, np.array([B[3], B[2], 1]))
+def box_transform(b, matrix):
+    P1 = np.matmul(matrix, np.array([b[1], b[0], 1]))
+    P2 = np.matmul(matrix, np.array([b[1], b[2], 1]))
+    P3 = np.matmul(matrix, np.array([b[3], b[0], 1]))
+    P4 = np.matmul(matrix, np.array([b[3], b[2], 1]))
     x1, y1 = P1[:2] / P1[2]
     x2, y2 = P2[:2] / P2[2]
     x3, y3 = P3[:2] / P3[2]
@@ -33,11 +37,6 @@ def box_transform(B, matrix):
 
 
 def gauss_noise(image, mean=0, var=0.001):
-    '''
-                 Add Gaussian noise
-                 Mean: mean
-                 Var: Various
-    '''
     image = np.array(image / 255, dtype=float)
     noise = np.random.normal(mean, var ** 0.5, image.shape)
     out = image + noise
@@ -47,7 +46,6 @@ def gauss_noise(image, mean=0, var=0.001):
         low_clip = 0.
     out = np.clip(out, low_clip, 1.0)
     out = np.uint8(out * 255)
-    # cv.imshow("gasuss", out)
     return out
 
 
@@ -70,7 +68,6 @@ def get_random_data(images, df, annotation_index, input_shape, max_boxes=12):
     nh = int(ih * scale)
     dx = random.randrange(0, w - nw + 1)
     dy = random.randrange(0, h - nh + 1)
-    image_data = 0
 
     image = cv2.resize(image, (nw, nh))
     new_image = np.ones((h, w)) * random.uniform(1, 255)
@@ -80,7 +77,8 @@ def get_random_data(images, df, annotation_index, input_shape, max_boxes=12):
     box_data = np.zeros((max_boxes, 5))
     if len(box) > 0:
         np.random.shuffle(box)
-        if len(box) > max_boxes: box = box[:max_boxes]
+        if len(box) > max_boxes:
+            box = box[:max_boxes]
         box[:, [0, 2]] = box[:, [0, 2]] * scale + dy
         box[:, [1, 3]] = box[:, [1, 3]] * scale + dx
         box_data[:len(box)] = box
@@ -104,7 +102,7 @@ def get_random_data(images, df, annotation_index, input_shape, max_boxes=12):
     # Apply blure
     if random.choices([True, False], [4 / 5, 1 / 5])[0]:
         k = random.randrange(1, 8, 2)
-        new_image = image = cv2.blur(new_image, (k, k), cv2.BORDER_DEFAULT)
+        new_image = cv2.blur(new_image, (k, k), cv2.BORDER_DEFAULT)
 
     # Apply Gaussian Noise
     if random.choices([True, False], [4 / 5, 1 / 5])[0]:
@@ -151,7 +149,7 @@ class DataGenerator(Sequence):
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(len(self.list_IDs))
-        if self.shuffle == True:
+        if self.shuffle:
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
@@ -167,7 +165,7 @@ class DataGenerator(Sequence):
             box_data.append(box)
         image_data = np.array(image_data)
         box_data = np.array(box_data)
-        y_true = preprocess_true_boxes(box_data, input_shape, anchors, num_classes)
+        y_true = preprocess_true_boxes(box_data, self.input_shape, self.anchors, self.num_classes)
 
         return image_data, y_true
 
@@ -191,8 +189,6 @@ def train_model(model, EPOCHS, lr0, loss_object, train_data_generator, test_data
         t_loss = loss_object([tf.convert_to_tensor(x) for x in output], [tf.convert_to_tensor(x) for x in labels])
         return t_loss
 
-    train_loss, n_train = 0, 0
-    test_loss, n_test = 0, 0
     best_score = 100000
     best_epoch = 1
     best_weights = model.get_weights()
@@ -224,4 +220,3 @@ def train_model(model, EPOCHS, lr0, loss_object, train_data_generator, test_data
             f'Test Loss: {test_loss / n_test}, '
         )
     model.set_weights(best_weights)
-

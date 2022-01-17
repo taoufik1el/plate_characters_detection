@@ -1,9 +1,6 @@
 import tensorflow as tf
 
 from functools import wraps
-import cv2
-import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
@@ -150,7 +147,7 @@ def yolo_head(feats, anchors, num_classes, input_shape, calc_loss=False):
     box_confidence = K.sigmoid(feats[..., 4:5])
     box_class_probs = K.sigmoid(feats[..., 5:])
 
-    if calc_loss == True:
+    if calc_loss:
         return grid, feats, box_xy, box_wh
     return box_xy, box_wh, box_confidence, box_class_probs
 
@@ -260,7 +257,8 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     for b in range(m):
         # Discard zero rows.
         wh = boxes_wh[b, valid_mask[b]]
-        if len(wh) == 0: continue
+        if len(wh) == 0:
+            continue
         # Expand dim to apply broadcasting.
         wh = np.expand_dims(wh, -2)
         box_maxes = wh / 2.
@@ -329,11 +327,8 @@ def box_iou(b1, b2):
     return iou
 
 
-def define_loss(anchors, num_classes, ignore_thresh=.5, print_loss=False):
+def define_loss(anchors, num_classes, ignore_thresh=.5):
     def yolo_loss(yolo_outputs, y_true):
-
-        mse_loss = tf.keras.losses.MeanSquaredError()
-        bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
         num_layers = len(anchors) // 3  # default setting
 
@@ -378,19 +373,16 @@ def define_loss(anchors, num_classes, ignore_thresh=.5, print_loss=False):
                                                                            from_logits=True)
             wh_loss = object_mask * box_loss_scale * 0.5 * K.square(raw_true_wh - raw_pred[..., 2:4])
             confidence_loss = object_mask * K.binary_crossentropy(object_mask, raw_pred[..., 4:5], from_logits=True) + \
-                              (1 - object_mask) * K.binary_crossentropy(object_mask, raw_pred[..., 4:5],
-                                                                        from_logits=True) * ignore_mask
+                               (1 - object_mask) * K.binary_crossentropy(object_mask, raw_pred[..., 4:5],
+                              from_logits=True) * ignore_mask
             class_loss = object_mask * K.binary_crossentropy(true_class_probs, raw_pred[..., 5:], from_logits=True)
-            # print(raw_pred[...,0:2])
 
             xy_loss = K.sum(xy_loss) / mf
             wh_loss = K.sum(wh_loss) / mf
             confidence_loss = K.sum(confidence_loss) / mf
             class_loss = K.sum(class_loss) / mf
             loss += xy_loss + wh_loss + 2 * confidence_loss + class_loss
-            if print_loss:
-                loss = tf.Print(loss, [loss, xy_loss, wh_loss, confidence_loss, class_loss, K.sum(ignore_mask)],
-                                message='loss: ')
+
         return loss
 
     return yolo_loss

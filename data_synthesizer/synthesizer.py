@@ -13,7 +13,7 @@ BACKGROUNDS = []
 bg_path = '../input/numbers-and-letters/images_for_generation/bg'
 for f in listdir(bg_path):
     im = cv2.imread(join(bg_path, f))
-    im = cv2.resize(im, (450,170))
+    im = cv2.resize(im, (450, 170))
     BACKGROUNDS.append(im)
 
 ARABIC_FONTS = ['../input/fonts/Amiri', '../input/fonts/Lateef', '../input/fonts/Scheherazade_New',
@@ -42,8 +42,8 @@ for path in LATIN_FONTS:
         LATIN_FONTS_ttf.append([join(path, f) for f in listdir(path) if 'ttf' in f])
 
 CHARS = {'LETTERS': ['ق', 'س', 'ش', 'م', 'و', 'د', 'ج', 'ب', 'أ', 'المغرب', 'W', 'HA'],
-         'DIGITS': [str(i) for i in range(0,10)] }
-LABELS = {i : str(i) for i in range(0,10)}
+         'DIGITS': [str(i) for i in range(0, 10)]}
+LABELS = {i: str(i) for i in range(0, 10)}
 for i in range(len(CHARS['LETTERS'])):
     LABELS[i+10] = CHARS['LETTERS'][i]
 
@@ -83,22 +83,22 @@ for i in LABELS:
                 CHAR_IMGS[i].append(img[y1 - 3:y1 + h + 3, x1 - 3:x1 + w + 3])
 
 FALSE_CHARS = []
-for x in ['|','|','|','|','|','|','-','*']:
+for x in ['|', '|', '|', '|', '|', '|', '-', '*']:
     for fontpath in ['../input/fonts/Barlow/Barlow-Regular.ttf',
-                              '../input/fonts/Barlow_Condensed/BarlowCondensed-Light.ttf',
-                              '../input/fonts/Teko/Teko-Bold.ttf']:
-        frame = np.ones((200, 400,3),dtype=np.uint8)*255
+                     '../input/fonts/Barlow_Condensed/BarlowCondensed-Light.ttf',
+                     '../input/fonts/Teko/Teko-Bold.ttf']:
+        frame = np.ones((200, 400, 3), dtype=np.uint8)*255
         font = ImageFont.truetype(fontpath, 150)
         img_pil = Image.fromarray(frame)
         draw = ImageDraw.Draw(img_pil)
-        draw.text((175, 80),x, font = font, fill=(0,0,0),anchor='mm')
-        FALSE_CHARS.append(np.array(img_pil)[25:150,150:200])
+        draw.text((175, 80), x, font=font, fill=(0,0,0), anchor='mm')
+        FALSE_CHARS.append(np.array(img_pil)[25:150, 150:200])
 
 kharbocha_path = '../input/numbers-and-letters'
-KHARBOCHA = [cv2.imread(join(kharbocha_path,p)) for p in listdir(kharbocha_path) if 'khrbocha' in p]
+KHARBOCHA = [cv2.imread(join(kharbocha_path, p)) for p in listdir(kharbocha_path) if 'khrbocha' in p]
 
 
-class DataCreator():
+class DataCreator:
     def __init__(self, characters=CHAR_IMGS, labels=LABELS):
         self.background = None
         self.boxes = []
