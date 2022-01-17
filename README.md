@@ -2,7 +2,7 @@
 
 In this repository I will give method to recognize the numbers of a car plate in images of steet views.
 
-We can summerize the pipline as the following:
+We can summerize the pipline in three steps:
 - find the bounding box of the full plate in an image
 - find the bounding box of each charachter in the plate
 - reconstruct the plate number based on the bounding box positions
