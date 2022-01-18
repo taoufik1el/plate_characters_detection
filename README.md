@@ -10,11 +10,15 @@ We can summerize the pipline in three steps:
 - reconstruct the plate number based on the bounding box positions.
 
 There is a possibility to use classical computer vision methods (canny, thresholding ...) to detect the plate and the charachters, but this solutions are not robust,
-for example the images can containe different kinds of noise and backgrounds. This is why a neural network based solutions can be a good solution, by training it on a varied dataset.
+for example the images can containe different kinds of noise and backgrounds. Also OCR solutions like [Tesseract](https://github.com/tesseract-ocr/tesseract) does not work for noisy images.
+
+This is why a neural network based solutions can be a good solution, by training it on a varied dataset.
 
 YOLO (You Only Look Once) is one efficient NN model in object detection, it's performant in terms of accuracy and inference time.
 
-We can use a trained yolo model to detect the plates in images, but I did'nt find any trained model that can detect digits and arabic charachters of the moroccan plates, so we will train a custumize yolo in our case. Also, there is no dataset of charachter detection of mixed LATIN-ARABIC charachters in a noisy backgroung, for this problem we will create a sythesized data by just taking random images as backgrounds and write on top of them charachters with different fonts and sizes, then we can apply in the online data auguementation some artifacts (rotations, perspectives, blur, noise ...), then we feed those images to the model.
+First, we will use a trained yolo model to detect the plates in images from [here](https://github.com/ThorPham/License-plate-detection) and [here](https://github.com/oublalkhalid/MoroccoAI-Data-Challenge), but I did'nt find any trained model that can detect digits and arabic charachters of the moroccan plates or any annotated dataset, so we will create our dataset and train a custumize yolo.
+
+For the creation of datasets, we just take random images as backgrounds and write on top of them charachters with different [fonts](https://fonts.google.com/) and sizes, then we can use some artifacts (rotations, perspectives, blur, noise ...) in the online data auguementation, then we feed those images to the model.
 
 You can find a full discription of the steps in this [notebook](https://github.com/taoufik1el/PLATE_CHARACHTER_DETECTION/blob/main/plate%20number%20recogition.ipynb)
 
