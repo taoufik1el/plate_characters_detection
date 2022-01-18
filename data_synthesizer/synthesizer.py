@@ -1,13 +1,11 @@
+import random
+from os import listdir
+from os.path import join, isdir
+
 import cv2
 import numpy as np
 import pandas as pd
-from os.path import join, isdir
-
 from PIL import ImageFont, ImageDraw, Image
-
-import random
-from os import listdir
-
 
 bg_path = 'data/backgrounds'
 kharbocha_path = 'data/khrbocha'

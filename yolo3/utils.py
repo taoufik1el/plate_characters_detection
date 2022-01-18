@@ -1,8 +1,8 @@
+import random
 from functools import reduce
 
 import cv2
 import numpy as np
-import random
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
 
