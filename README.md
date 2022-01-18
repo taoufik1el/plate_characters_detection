@@ -16,6 +16,8 @@ YOLO (You Only Look Once) is one efficient NN model in object detection, it's pe
 
 We can use a trained yolo model to detect the plates in images, but I did'nt find any trained model that can detect digits and arabic charachters of the moroccan plates, so we will train a custumize yolo in our case. Also, there is no dataset of charachter detection of mixed LATIN-ARABIC charachters in a noisy backgroung, for this problem we will create a sythesized data by just taking random images as backgrounds and write on top of them charachters with different fonts and sizes, then we can apply in the online data auguementation some artifacts (rotations, perspectives, blur, noise ...), then we feed those images to the model.
 
+You can find a full discription of the steps in this [notebook](https://github.com/taoufik1el/PLATE_CHARACHTER_DETECTION/blob/main/plate%20number%20recogition.ipynb)
+
 
 
 The [yolo3](https://github.com/taoufik1el/PLATE_CHARACHTER_DETECTION/tree/main/yolo3) file is partialy copied from [this repository](https://github.com/qqwweee/keras-yolo3) and modified.
