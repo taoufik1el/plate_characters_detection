@@ -7,16 +7,11 @@ import numpy as np
 import pandas as pd
 from PIL import ImageFont, ImageDraw, Image
 
-bg_path = 'data/backgrounds'
+bg_path = 'data/backgrounds'  # you can modify the background images in this directory
 kharbocha_path = 'data/khrbocha'
-ha_path = 'data/ha'
+ha_path = 'data/ha'  # This is a special character that I didn't find how to write it
 
-BACKGROUNDS = []
-
-for f in listdir(bg_path):
-    im = cv2.imread(join(bg_path, f))#cv2.imread(bg_path + '/' +f)#
-    im = cv2.resize(im, (450, 170))
-    BACKGROUNDS.append(im)
+'''In the following two lists, put your fonts directories, you can download fonts in fonts.google.com'''
 
 ARABIC_FONTS = ['data/Fonts/Amiri', 'data/fonts/Lateef', 'data/fonts/Scheherazade_New',
                 'data/fonts/Aref_Ruqaa',
@@ -28,6 +23,18 @@ LATIN_FONTS = ['data/fonts/Barlow', 'data/fonts/Be_Vietnam_Pro', 'data/fonts/Beb
                'data/fonts/License-Plate',
                'data/fonts/Teko', 'data/fonts/Barlow_Condensed',
                ]
+
+'''put here all your characters'''
+
+CHARS = {'LETTERS': ['ق', 'س', 'ش', 'م', 'و', 'د', 'ج', 'ب', 'أ', 'المغرب', 'W', 'HA'],
+         'DIGITS': [str(i) for i in range(0, 10)]}
+
+# mapping characters with labels from 0 to num_labels
+LABELS = {i: str(i) for i in range(0, 10)}
+for i in range(len(CHARS['LETTERS'])):
+    LABELS[i+10] = CHARS['LETTERS'][i]
+
+'''extracting the true font's directories'''
 
 ARABIC_FONTS_ttf = []
 for path in ARABIC_FONTS:
@@ -43,11 +50,7 @@ for path in LATIN_FONTS:
     else:
         LATIN_FONTS_ttf.append([join(path, f) for f in listdir(path) if 'ttf' in f])
 
-CHARS = {'LETTERS': ['ق', 'س', 'ش', 'م', 'و', 'د', 'ج', 'ب', 'أ', 'المغرب', 'W', 'HA'],
-         'DIGITS': [str(i) for i in range(0, 10)]}
-LABELS = {i: str(i) for i in range(0, 10)}
-for i in range(len(CHARS['LETTERS'])):
-    LABELS[i+10] = CHARS['LETTERS'][i]
+'''transforming characters to real images, and organizing it in a dictionary'''
 
 CHAR_IMGS = {}
 for i in LABELS:
@@ -83,6 +86,8 @@ for i in LABELS:
                 x1, y1, w, h = cv2.boundingRect(img_binary)
                 CHAR_IMGS[i].append(img[y1 - 3:y1 + h + 3, x1 - 3:x1 + w + 3])
 
+'''putting the special characters to be ignored in the images'''
+
 FALSE_CHARS = []
 for x in ['|', '|', '|', '|', '|', '|', '-', '*']:
     for fontpath in ['data/fonts/Barlow/Barlow-Regular.ttf',
@@ -95,10 +100,24 @@ for x in ['|', '|', '|', '|', '|', '|', '-', '*']:
         draw.text((175, 80), x, font=font, fill=(0,0,0), anchor='mm')
         FALSE_CHARS.append(np.array(img_pil)[25:150, 150:200])
 
+'''Some artifacts to be applied on the characters'''
+
 KHARBOCHA = [cv2.imread(join(kharbocha_path, p)) for p in listdir(kharbocha_path) if 'khrbocha' in p]
+
+'''extracting the backgrounds in a list'''
+BACKGROUNDS = []
+
+for f in listdir(bg_path):
+    im = cv2.imread(join(bg_path, f))#cv2.imread(bg_path + '/' +f)#
+    im = cv2.resize(im, (450, 170))
+    BACKGROUNDS.append(im)
 
 
 class DataCreator:
+
+    ''' this class that is responsible for generating plates by putting
+     characchters in the backgrounds on random positions and random values '''
+
     def __init__(self, characters=CHAR_IMGS, labels=LABELS):
         self.background = None
         self.boxes = []
@@ -109,10 +128,12 @@ class DataCreator:
         self.letters = [i for i in labels.keys() if not LABELS[i].isnumeric()]
         self.CHARACTERS = characters
 
-    def generate_backround(self, backgrounds):
+    def generate_background(self, backgrounds):
         self.background = np.copy(random.choice(backgrounds))
 
     def draw_shape(self, shape, xy, alpha, sigma):
+        ''' draw a character in the background in a box given by it's coordinates
+         in xy and with a value alpha and variance sigma'''
         ih, iw = shape.shape[0], shape.shape[1]  # image.shape
         h, w = xy[0][1] - xy[0][0], xy[1][1] - xy[1][0]
         # resize image
@@ -132,6 +153,7 @@ class DataCreator:
         self.background[xy[0][0]:xy[0][1], xy[1][0]:xy[1][1]] = crop
 
     def generate_aligned_boxes(self):
+        '''generate boxes with eandom dimentions and positions, and associating labels to them'''
         Bh, Bw = self.background.shape[0], self.background.shape[1]
         h = random.randrange(44, 60)
         w = int(h * 73 / 111)
@@ -160,6 +182,7 @@ class DataCreator:
         self.sigmas += [random.randrange(5, 30), random.randrange(5, 30), random.randrange(5, 30)]
 
     def generate_random_boxes(self, n):
+        '''generate boxes with eandom dimentions and positions, and associating labels to them'''
         Bh, Bw = self.background.shape[0], self.background.shape[1]
         for i in range(n):
             h, w = random.randrange(50, 150), random.randrange(20, 150)
@@ -185,7 +208,7 @@ class DataCreator:
 
     def create_image(self, BACKGROUNDS):
         self.reset()
-        self.generate_backround(BACKGROUNDS)
+        self.generate_background(BACKGROUNDS)
         if random.choices([True, False], [0.5, 0.5])[0]:
             self.generate_aligned_boxes()
         else:
@@ -197,6 +220,7 @@ class DataCreator:
             shape = random.choice(self.CHARACTERS[self.chars[i]])
             self.draw_shape(shape, xy, alpha, sigma)
         self.background = np.uint8(np.clip(self.background, 0.0, 255.0))
+        return self.background
 
 
 def generate(n, save=False):
@@ -205,8 +229,8 @@ def generate(n, save=False):
     y = {'id': [], 'annotations': []}
     for i in range(n):
         obj = DataCreator()
-        obj.create_image(BACKGROUNDS)
-        images.append(cv2.cvtColor(obj.background, cv2.COLOR_BGR2GRAY))
+        image = obj.create_image(BACKGROUNDS)
+        images.append(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
         y['id'].append(i)
         y['annotations'].append('')
         for j in range(len(obj.boxes)):
