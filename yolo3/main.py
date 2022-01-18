@@ -37,7 +37,7 @@ def create_tiny_model(anchors, num_classes):
     return model_body
 
 
-def train(images: np.array, df: pd.DataFrame):
+def train(images: np.array, df: pd.DataFrame, save=False):
     anchors = np.array([[59, 23], [74, 28], [79, 47], [89, 22], [96, 32], [118, 58], [124, 39], [125, 22], [58, 36]])
 
     num_classes = 22
@@ -78,12 +78,16 @@ def train(images: np.array, df: pd.DataFrame):
     # model.compile(optimizer=Adam(lr=1e-3))
 
     train_model(model, 75, 0.001, loss_object, train_data_generator, test_data_generator, reduce_lr, early_stopping)
+    if save:
+        model.save_weights("yolo_chars")
 
     return model
 
 
 if __name__ == '__main__':
-    df = pd.read_csv('fileeeeeeee')
-    image = pd.load('fileeeee')
+    csv_file = input('Enter you cvv location')
+    numpy_images_file = input('Enter your numpy images location')
+    df = pd.read_csv(csv_file)
+    image = pd.load(numpy_images_file)
     model = train(image, df)
     model.save_weights("yolo_chars")
