@@ -11,9 +11,9 @@ The used pipeline for charachter recognition from car images can be summerized i
 
 <img src="https://github.com/taoufik1el/plate_characters_detection/blob/main/images/car.jpg" width="400" height="400">
 
-<img src=https://github.com/taoufik1el/plate_characters_detection/blob/main/images/plate.png width="400" height="400">
+<img src=https://github.com/taoufik1el/plate_characters_detection/blob/main/images/plate.png width="400" height="100">
 
-<img src=https://github.com/taoufik1el/plate_characters_detection/blob/main/images/plate_with_boxes.png width="400" height="400">
+<img src=https://github.com/taoufik1el/plate_characters_detection/blob/main/images/plate_with_boxes.png width="400" height="100">
 
 
 There is a possibility to use classical computer vision methods (canny, thresholding ...) to detect the plate and the charachters, but this solutions are not robust,
