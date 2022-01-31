@@ -29,7 +29,7 @@ But For the second step, did'nt find any annotated dataset or any trained model 
 
 For the creation of datasets, we just take random images as backgrounds and write on top of them charachters with different [fonts](https://fonts.google.com/) and sizes, then we can use some artifacts (rotations, perspectives, blur, noise ...) in the online data auguementation, then we feed those images to the model.
 
-You can find a full discription of the steps in this [notebook](https://github.com/taoufik1el/PLATE_CHARACHTER_DETECTION/blob/main/plate%20number%20recogition.ipynb)
+You can find a full discription of the steps in this [notebook](https://github.com/taoufik1el/plate_characters_detection/tree/main/notebooks)
 
 
 
