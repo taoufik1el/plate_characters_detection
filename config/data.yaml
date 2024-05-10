@@ -1,0 +1,5 @@
+data_path: data
+ocr_objects_file: data/ocr_objects.json
+false_characters_file: data/false_characters.json
+dirt_objects_file: data/augmentation_effects/khrbocha
+backgrounds_path: data/backgrounds

@@ -1,0 +1,29 @@
+defaults:
+  - data@data
+
+input_shape:  # multiple of 32
+  height: 128
+  width: 416
+n_batches: 50
+batch_size: 32
+epochs: 1
+optimizer:
+  lr: 0.001
+  reduce_lr:
+    factor: 0.5
+    patience: 3
+  early_stopping:
+    patience: 5
+anchors:
+  - [59, 23]
+  - [74, 28]
+  - [79, 47]
+  - [89, 22]
+  - [96, 32]
+  - [118, 58]
+  - [124, 39]
+  - [125, 22]
+  - [58, 36]
+save_model:
+  save: true
+  save_path: yolo_model

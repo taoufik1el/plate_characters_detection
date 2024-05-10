@@ -1,0 +1,15 @@
+{
+  "|": {
+    "font_paths": ["other"],
+    "weight": 6
+  },  "-": {
+    "font_paths": ["other"],
+    "weight": 1
+  },  "*": {
+    "font_paths": ["other"],
+    "weight": 1
+  },  "+": {
+    "font_paths": ["other"],
+    "weight": 1
+  }
+}
