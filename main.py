@@ -7,7 +7,7 @@ import tensorflow.keras.backend as K
 from omegaconf import DictConfig
 from tensorflow.keras.layers import Input
 
-from model.model import yolo_body, tiny_yolo_body, define_loss
+from model.yolo3 import yolo_body, tiny_yolo_body, define_loss
 from model.utils import DataGenerator, train_model
 
 
