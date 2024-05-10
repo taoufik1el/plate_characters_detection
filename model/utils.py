@@ -6,6 +6,8 @@ import cv2
 import numpy as np
 import tensorflow as tf
 from pathlib import Path
+
+from omegaconf import DictConfig
 from tensorflow.keras.utils import Sequence
 from tqdm import tqdm
 
@@ -223,9 +225,8 @@ class DataGenerator(Sequence):
 
     def __init__(
         self,
-        data_path: str,
-        ocr_objects_file: str,
-        false_characters_file: str,
+        ocr_objects: DictConfig,
+        false_characters: DictConfig,
         dirt_objects_file: str,
         backgrounds_path: str,
         n_batches: int,
@@ -241,12 +242,10 @@ class DataGenerator(Sequence):
         self.anchors = anchors
         self.shuffle = shuffle
 
-        self.ocr_objects = OcrObjects.from_json(ocr_objects_file, Path(data_path))
+        self.ocr_objects = OcrObjects.from_json(ocr_objects)
         self.num_classes = self.ocr_objects.num_classes
 
-        self.false_characters = OcrObjects.from_json(
-            false_characters_file, Path(data_path)
-        )
+        self.false_characters = OcrObjects.from_json(false_characters)
 
         self.backgrounds = BackGround(Path(backgrounds_path))
         self.dirt_object = DirtObject(Path(dirt_objects_file))

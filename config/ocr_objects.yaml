@@ -1,0 +1,89 @@
+'0':
+  font_paths:
+  - latin
+  weight: 0.09
+'1':
+  font_paths:
+  - latin
+  weight: 0.09
+'2':
+  font_paths:
+  - latin
+  weight: 0.09
+'3':
+  font_paths:
+  - latin
+  weight: 0.09
+'4':
+  font_paths:
+  - latin
+  weight: 0.09
+'5':
+  font_paths:
+  - latin
+  weight: 0.09
+'6':
+  font_paths:
+  - latin
+  weight: 0.09
+'7':
+  font_paths:
+  - latin
+  weight: 0.09
+'8':
+  font_paths:
+  - latin
+  weight: 0.09
+'9':
+  font_paths:
+  - latin
+  weight: 0.09
+HA:
+  crop_paths:
+  - ha
+  font_paths: []
+  weight: 0.009
+W:
+  font_paths:
+  - latin
+  weight: 0.009
+"\u0623":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u0627\u0644\u0645\u063A\u0631\u0628":
+  font_paths:
+  - arabic
+  weight: 0.001
+"\u0628":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u062C":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u062F":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u0633":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u0634":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u0642":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u0645":
+  font_paths:
+  - arabic
+  weight: 0.009
+"\u0648":
+  font_paths:
+  - arabic
+  weight: 0.009

@@ -6,11 +6,13 @@ from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
+from omegaconf import DictConfig
 
 from synthetic_data.utils import generate_from_font, generate_from_crop
 
 FONTS = "fonts"
 CROPS = "crops"
+DATA = Path("data")
 
 
 class OcrObject:
@@ -18,17 +20,14 @@ class OcrObject:
         self,
         character: str,
         path_info: Dict[str, List[str]],
-        data_path: Path,
         label_id: Optional[int] = None,
     ):
         self.character = character
         self.font_paths = [
-            data_path / FONTS / font_path
-            for font_path in path_info.get("font_paths", [])
+            DATA / FONTS / font_path for font_path in path_info.get("font_paths", [])
         ]
         self.crop_paths = [
-            data_path / CROPS / crop_path
-            for crop_path in path_info.get("crop_paths", [])
+            DATA / CROPS / crop_path for crop_path in path_info.get("crop_paths", [])
         ]
         self.weight: float = path_info.get("weight", 1.0)
         self.label_id = label_id
@@ -60,14 +59,12 @@ class OcrObjects:
         self.ocr_objects = ocr_objects
 
     @classmethod
-    def from_json(cls, json_path: str, data_path: Path):
-        with open(json_path) as f:
-            character_infos: Dict[str, Any] = json.load(f)
+    def from_json(cls, character_infos: DictConfig):
         sorted_characters = sorted(character_infos.keys())
         ocr_objects = []
         for label_id, char in enumerate(sorted_characters):
             ocr_objects.append(
-                OcrObject(char, character_infos[char], data_path, label_id=label_id)
+                OcrObject(char, character_infos[char], label_id=label_id)
             )
         return cls(ocr_objects)
 
