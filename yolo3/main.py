@@ -11,7 +11,7 @@ from yolo3.utils import DataGenerator, train_model
 
 
 def get_anchors(anchors_line):
-    anchors = [float(x) for x in anchors_line.split(',')]
+    anchors = [float(x) for x in anchors_line.split(",")]
     return np.array(anchors).reshape(-1, 2)
 
 
@@ -21,7 +21,11 @@ def create_model(anchors, num_classes):
     num_anchors = len(anchors)
 
     model_body = yolo_body(image_input, num_anchors // 3, num_classes)
-    print('Create YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+    print(
+        "Create YOLOv3 model with {} anchors and {} classes.".format(
+            num_anchors, num_classes
+        )
+    )
 
     return model_body
 
@@ -32,13 +36,29 @@ def create_tiny_model(anchors, num_classes):
     num_anchors = len(anchors)
 
     model_body = tiny_yolo_body(image_input, num_anchors // 2, num_classes)
-    print('Create Tiny YOLOv3 model with {} anchors and {} classes.'.format(num_anchors, num_classes))
+    print(
+        "Create Tiny YOLOv3 model with {} anchors and {} classes.".format(
+            num_anchors, num_classes
+        )
+    )
 
     return model_body
 
 
 def train(images: np.array, df: pd.DataFrame, save=False):
-    anchors = np.array([[59, 23], [74, 28], [79, 47], [89, 22], [96, 32], [118, 58], [124, 39], [125, 22], [58, 36]])
+    anchors = np.array(
+        [
+            [59, 23],
+            [74, 28],
+            [79, 47],
+            [89, 22],
+            [96, 32],
+            [118, 58],
+            [124, 39],
+            [125, 22],
+            [58, 36],
+        ]
+    )
 
     num_classes = 22
 
@@ -50,8 +70,8 @@ def train(images: np.array, df: pd.DataFrame, save=False):
     else:
         model = create_model(anchors, num_classes)  # make sure you know what you freeze
 
-    reduce_lr = {'factor': 0.5, 'patience': 3}
-    early_stopping = {'patience': 5}
+    reduce_lr = {"factor": 0.5, "patience": 3}
+    early_stopping = {"patience": 5}
 
     val_split = 0.5
     annotation_indexes = [i for i in range(len(df))]
@@ -62,14 +82,28 @@ def train(images: np.array, df: pd.DataFrame, save=False):
     train_indexes = annotation_indexes[num_val:]
     test_indexes = annotation_indexes[:num_val]
 
-    train_data_generator = DataGenerator(list_IDs=train_indexes, images=images, df=df, anchors=anchors,
-                                         num_classes=num_classes,
-                                         batch_size=32, input_shape=input_shape, shuffle=True)
-    test_data_generator = DataGenerator(list_IDs=test_indexes, images=images, df=df, anchors=anchors,
-                                        num_classes=num_classes,
-                                        batch_size=32, input_shape=input_shape, shuffle=True)
+    train_data_generator = DataGenerator(
+        list_IDs=train_indexes,
+        images=images,
+        df=df,
+        anchors=anchors,
+        num_classes=num_classes,
+        batch_size=32,
+        input_shape=input_shape,
+        shuffle=True,
+    )
+    test_data_generator = DataGenerator(
+        list_IDs=test_indexes,
+        images=images,
+        df=df,
+        anchors=anchors,
+        num_classes=num_classes,
+        batch_size=32,
+        input_shape=input_shape,
+        shuffle=True,
+    )
 
-    loss_object = define_loss(anchors, num_classes, ignore_thresh=.5)
+    loss_object = define_loss(anchors, num_classes, ignore_thresh=0.5)
 
     # train_model(model,5, 0.001, loss_object, train_data_generator, test_data_generator, reduce_lr, early_stopping)
 
@@ -77,16 +111,25 @@ def train(images: np.array, df: pd.DataFrame, save=False):
     #    model.layers[i].trainable = True
     # model.compile(optimizer=Adam(lr=1e-3))
 
-    train_model(model, 75, 0.001, loss_object, train_data_generator, test_data_generator, reduce_lr, early_stopping)
+    train_model(
+        model,
+        75,
+        0.001,
+        loss_object,
+        train_data_generator,
+        test_data_generator,
+        reduce_lr,
+        early_stopping,
+    )
     if save:
         model.save_weights("yolo_chars")
 
     return model
 
 
-if __name__ == '__main__':
-    csv_file = input('Enter you cvv location')
-    numpy_images_file = input('Enter your numpy images location')
+if __name__ == "__main__":
+    csv_file = input("Enter you cvv location")
+    numpy_images_file = input("Enter your numpy images location")
     df = pd.read_csv(csv_file)
     image = pd.load(numpy_images_file)
     model = train(image, df)
