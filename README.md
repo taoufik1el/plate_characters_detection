@@ -17,7 +17,7 @@ The used pipeline for charachter recognition from car images can be summerized i
 
 
 There is a possibility to use classical computer vision methods (canny, thresholding ...) to detect the plate and the charachters, but this solutions are not robust,
-for example the images can containe different kinds of noise and backgrounds. Also OCR solutions like [Tesseract](https://github.com/tesseract-ocr/tesseract) does not work for noisy images.
+for exampl the images can containe different kinds of noise and backgrounds. Also OCR solutions like [Tesseract](https://github.com/tesseract-ocr/tesseract) does not work for noisy images.
 
 This is why a neural network based solutions can be a good solution, by training it on a varied dataset.
 
