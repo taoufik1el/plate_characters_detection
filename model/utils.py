@@ -11,7 +11,7 @@ from omegaconf import DictConfig
 from tensorflow.keras.utils import Sequence
 from tqdm import tqdm
 
-from synthetic_data.classes import OcrObjects, BackGround, DirtObject
+from synthetic_data.classes import OcrObjects, ImageGenerator
 from synthetic_data.synthesizer import create_image_and_labels
 import numpy.typing as npt
 
@@ -63,8 +63,8 @@ def rand(a=0.0, b=1.0):
 def get_random_data(
     ocr_objects: OcrObjects,
     false_characters: OcrObjects,
-    backgrounds: BackGround,
-    dirt_object: DirtObject,
+    backgrounds: ImageGenerator,
+    dirt_object: ImageGenerator,
     input_shape,
     max_boxes=12,
 ):
@@ -247,8 +247,8 @@ class DataGenerator(Sequence):
 
         self.false_characters = OcrObjects.from_json(false_characters)
 
-        self.backgrounds = BackGround(Path(backgrounds_path))
-        self.dirt_object = DirtObject(Path(dirt_objects_file))
+        self.backgrounds = ImageGenerator(Path(backgrounds_path))
+        self.dirt_object = ImageGenerator(Path(dirt_objects_file))
         self.on_epoch_end()
 
     def __len__(self):

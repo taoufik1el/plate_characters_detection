@@ -82,16 +82,7 @@ class OcrObjects:
         return len(self.all_labels)
 
 
-class DirtObject:
-    def __init__(self, images_path: Path):
-        self.image_paths = list(images_path.iterdir())
-
-    def generate_image(self) -> npt.NDArray[np.uint8]:
-        image_path = random.choice(self.image_paths)
-        return generate_from_crop(image_path)
-
-
-class BackGround:
+class ImageGenerator:
     def __init__(self, images_path: Path):
         self.image_paths = list(images_path.iterdir())
 
@@ -139,15 +130,3 @@ class CharacterAnnotation:
         self.ocr_object = ocr_object
         self.alpha = alpha
         self.sigma = sigma
-
-    @property
-    def to_label_str(self):
-        return "<*>".join(
-            [
-                str(self.bbox.x_min),
-                str(self.bbox.x_max),
-                str(self.bbox.y_min),
-                str(self.bbox.y_max),
-                str(self.ocr_object.label_id),
-            ]
-        )

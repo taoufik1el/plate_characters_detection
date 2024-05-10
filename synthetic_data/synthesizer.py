@@ -8,8 +8,7 @@ import numpy.typing as npt
 from tqdm import tqdm
 
 from synthetic_data.classes import (
-    BackGround,
-    DirtObject,
+    ImageGenerator,
     Bbox,
     OcrObjects,
     CharacterAnnotation,
@@ -26,7 +25,7 @@ def draw_shape(
     crop: npt.NDArray[np.any],
     bbox_annotation: CharacterAnnotation,
     background: npt.NDArray[np.any],
-    dirt_object: DirtObject,
+    dirt_object: ImageGenerator,
 ):
     """draw a character in the background in a box given by its coordinates
     in xy and with a value alpha and variance sigma"""
@@ -151,8 +150,8 @@ def generate_random_boxes(
 def create_image_and_labels(
     ocr_objects: OcrObjects,
     false_characters: OcrObjects,
-    backgrounds: BackGround,
-    dirt_object: DirtObject,
+    backgrounds: ImageGenerator,
+    dirt_object: ImageGenerator,
 ) -> Tuple[npt.NDArray[np.any], List[CharacterAnnotation]]:
     background = backgrounds.generate_image()
     background = cv2.resize(background, (450, 170))
@@ -186,8 +185,8 @@ def generate(
     n,
     ocr_objects: OcrObjects,
     false_characters: OcrObjects,
-    backgrounds: BackGround,
-    dirt_object: DirtObject,
+    backgrounds: ImageGenerator,
+    dirt_object: ImageGenerator,
     save=False,
 ):
     images = []
