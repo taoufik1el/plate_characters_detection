@@ -6,7 +6,7 @@ If you want to build a license plate detection model in your country, but couldn
 
 The used pipeline for charachter recognition from car images can be summerized in three steps:
 - find the bounding box of the full licence plate in an image using a trained yolov3.
-- find the bounding box of each charachter in the plate using a customized yolov3 trained on synthesized data.
+- find the bounding box of each character in the plate using a customized yolov3 trained on synthesized data.
 - reconstruct the plate number based on the bounding box positions.
 
 <img src="https://github.com/taoufik1el/plate_characters_detection/blob/main/images/car.jpg" width="400" height="400">
