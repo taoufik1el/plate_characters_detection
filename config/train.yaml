@@ -4,9 +4,9 @@ defaults:
 input_shape:  # multiple of 32
   height: 128
   width: 416
-n_batches: 50
+n_batches: 1500
 batch_size: 32
-epochs: 1
+epochs: 50
 optimizer:
   lr: 0.001
   reduce_lr:

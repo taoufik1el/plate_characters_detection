@@ -1,4 +1,5 @@
 from functools import wraps
+from typing import Tuple
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -217,7 +218,7 @@ def yolo_eval(
     max_boxes=12,
     score_threshold=0.6,  # 0.5
     iou_threshold=0.5,
-):
+) -> Tuple[tf.Tensor, ...]:
     """Evaluate YOLO model on given input and return filtered boxes."""
     num_layers = len(yolo_outputs)
     anchor_mask = (

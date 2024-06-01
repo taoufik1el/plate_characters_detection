@@ -123,6 +123,10 @@ class Bbox:
     def coordinates(self):
         return self.x_min, self.x_max, self.y_min, self.y_max
 
+    @property
+    def centroid(self):
+        return (self.x_max + self.x_min) // 2, (self.y_max + self.y_min) // 2
+
 
 class CharacterAnnotation:
     def __init__(self, bbox: Bbox, ocr_object: OcrObject, alpha: int, sigma: int):

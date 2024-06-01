@@ -1,5 +1,6 @@
 import random
 from functools import reduce
+from multiprocessing import Pool
 from typing import Tuple
 
 import cv2
@@ -220,6 +221,22 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     return y_true
 
 
+def generate_data(args):
+    """
+    Function to be executed in parallel.
+    This function is defined outside the class to avoid pickling issues.
+    """
+    index, ocr_objects, false_characters, backgrounds, dirt_object, input_shape = args
+    image, box = get_random_data(
+        ocr_objects,
+        false_characters,
+        backgrounds,
+        dirt_object,
+        input_shape,
+    )
+    return image, box
+
+
 class DataGenerator(Sequence):
     """Generates data for Keras"""
 
@@ -233,14 +250,14 @@ class DataGenerator(Sequence):
         anchors: npt.NDArray[np.int8],
         batch_size: int = 32,
         input_shape: Tuple[int, int] = (128, 416),
-        shuffle: bool = True,
+        num_processes: int = 12,
     ):
         """Initialization"""
         self.n_batches = n_batches
         self.batch_size = batch_size
         self.input_shape = input_shape
         self.anchors = anchors
-        self.shuffle = shuffle
+        self.num_processes = num_processes
 
         self.ocr_objects = OcrObjects.from_json(ocr_objects)
         self.num_classes = self.ocr_objects.num_classes
@@ -257,9 +274,9 @@ class DataGenerator(Sequence):
 
     def __getitem__(self, index):
         """Generate one batch of data"""
-        X, y = self.__data_generation()
+        x, y = self.__data_generation()
 
-        return X, y
+        return x, y
 
     def on_epoch_end(self):
         """Updates indexes after each epoch"""
@@ -271,17 +288,17 @@ class DataGenerator(Sequence):
         image_data = []
         box_data = []
 
-        # Generate data
-        for _ in range(self.batch_size):
-            image, box = get_random_data(
-                self.ocr_objects,
-                self.false_characters,
-                self.backgrounds,
-                self.dirt_object,
-                self.input_shape,
-            )
-            image_data.append(image)
-            box_data.append(box)
+        args = [(i, self.ocr_objects, self.false_characters, self.backgrounds, self.dirt_object, self.input_shape) for i in range(self.batch_size)]
+
+        # Multiprocessing pool
+        with Pool(processes=self.num_processes) as pool:
+            results = pool.map(generate_data, args)
+
+        # Collect results
+        for result in results:
+            image_data.append(result[0])
+            box_data.append(result[1])
+
         image_data = np.array(image_data)
         box_data = np.array(box_data)
         y_true = preprocess_true_boxes(
