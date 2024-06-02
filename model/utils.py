@@ -97,7 +97,8 @@ def get_random_data(
     dy = random.randrange(0, h - nh + 1)
 
     image = cv2.resize(image, (nw, nh))
-    new_image = np.ones((h, w)) * random.uniform(1, 255)
+    borderValue = -1
+    new_image = np.ones((h, w))*borderValue #* random.uniform(1, 255)
     new_image[dy : dy + nh, dx : dx + nw] = image
 
     # correct boxes
@@ -126,10 +127,14 @@ def get_random_data(
 
         # Apply Perspective Transform Algorithm
         matrix = cv2.getPerspectiveTransform(pts1, pts2)
-        new_image = cv2.warpPerspective(new_image, matrix, (w, h))
+        new_image = cv2.warpPerspective(new_image, matrix, (w, h), borderValue=borderValue)
 
         for i in range(len(labels)):
             box_data[i, 0:4] = box_transform(box_data[i, 0:4], matrix)
+
+    background_image = cv2.resize(backgrounds.generate_image(), (w, h))
+    background_image = cv2.cvtColor(background_image, cv2.COLOR_BGR2GRAY)
+    new_image = np.where(new_image != borderValue, new_image, background_image)
 
     # Apply blure
     if random.choices([True, False], [4 / 5, 1 / 5])[0]:
