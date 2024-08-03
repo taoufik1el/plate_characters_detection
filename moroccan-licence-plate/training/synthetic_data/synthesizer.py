@@ -7,13 +7,13 @@ import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
 
-from training.synthetic_data.classes import (
+from plate_characters_detection.training.synthetic_data.classes import (
     ImageGenerator,
     Bbox,
     OcrObjects,
     CharacterAnnotation,
 )
-from training.synthetic_data.utils import (
+from plate_characters_detection.training.synthetic_data.utils import (
     black_area_intersection,
     write_bool_on_background,
     write_negative_bool_on_image,

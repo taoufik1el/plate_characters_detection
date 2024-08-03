@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 from omegaconf import DictConfig
 
-from training.synthetic_data.utils import generate_from_font, generate_from_crop
+from plate_characters_detection.training.synthetic_data.utils import generate_from_font, generate_from_crop
 
 FONTS = "fonts"
 CROPS = "crops"

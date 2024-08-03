@@ -12,8 +12,8 @@ from omegaconf import DictConfig
 from tensorflow.keras.utils import Sequence
 from tqdm import tqdm
 
-from training.synthetic_data.classes import OcrObjects, ImageGenerator
-from training.synthetic_data.synthesizer import create_image_and_labels
+from plate_characters_detection.training.synthetic_data.classes import OcrObjects, ImageGenerator
+from plate_characters_detection.training.synthetic_data.synthesizer import create_image_and_labels
 import numpy.typing as npt
 
 

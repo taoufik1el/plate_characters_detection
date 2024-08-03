@@ -7,10 +7,9 @@ import numpy.typing as npt
 
 import tensorflow as tf
 
-from utils.tools import ImageDetail, preprocess_image_for_plate_detection, get_crop, get_structured_output, OutputBox, \
+from plate_characters_detection.inference_utils.tools import ImageDetail, preprocess_image_for_plate_detection, get_crop, get_structured_output, OutputBox, \
     construct_lines
-
-from utils.yolo_tools import yolo_eval
+from plate_characters_detection.training.model.yolo3 import yolo_eval
 
 
 def get_image_details(images: List[npt.NDArray[np.uint8]]) -> List[ImageDetail]:

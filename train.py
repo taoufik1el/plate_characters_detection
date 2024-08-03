@@ -8,8 +8,8 @@ import yaml
 from omegaconf import DictConfig
 from tensorflow.keras.layers import Input
 
-from training.model.utils import DataGenerator, train_model
-from training import yolo_body, tiny_yolo_body, define_loss
+from plate_characters_detection.training.model import DataGenerator, train_model
+from plate_characters_detection.training import yolo_body, tiny_yolo_body, define_loss
 
 
 def get_anchors(anchors_line):
@@ -41,7 +41,7 @@ def create_tiny_model(anchors, num_classes):
     return model_body
 
 
-@hydra.main(version_base=None, config_path="training/config", config_name="train")
+@hydra.main(version_base=None, config_path="moroccan-licence-plate/training/config", config_name="train")
 def train(cfg: DictConfig):
     anchors = np.array(cfg.anchors)
 

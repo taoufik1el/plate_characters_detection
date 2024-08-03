@@ -1,5 +1,4 @@
-from typing import Optional, Tuple
-from functools import wraps, reduce
+from functools import wraps
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -16,53 +15,7 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 
-
-def compose(*funcs):
-    """Compose arbitrarily many functions, evaluated left to right.
-    Reference: https://mathieularose.com/function-composition-in-python/
-    """
-    # return lambda x: reduce(lambda v, f: f(v), funcs, x)
-    if funcs:
-        return reduce(lambda f, g: lambda *a, **kw: g(f(*a, **kw)), funcs)
-    else:
-        raise ValueError("Composition of empty sequence not supported.")
-
-
-class Bbox:
-    def __init__(
-        self,
-        x_min,
-        y_min,
-        height,
-        width,
-        safe_coordinates: Optional[Tuple[int, int, int, int]] = None,
-    ):
-        self.x_min = max(0, x_min)
-        self.y_min = max(0, y_min)
-        self.height = height
-        self.width = width
-        if safe_coordinates:
-            safe_xmin, safe_ymin, safe_xmax, safe_ymax = safe_coordinates
-            self.x_min = max(self.x_min, safe_xmin)
-            self.y_min = max(self.y_min, safe_ymin)
-            self.height = min(self.y_min + self.height, safe_ymax) - self.y_min
-            self.width = min(self.x_min + self.width, safe_xmax) - self.x_min
-
-    @property
-    def x_max(self):
-        return self.x_min + self.width
-
-    @property
-    def y_max(self):
-        return self.y_min + self.height
-
-    @property
-    def coordinates(self):
-        return self.x_min, self.x_max, self.y_min, self.y_max
-
-    @property
-    def centroid(self):
-        return (self.x_max + self.x_min) // 2, (self.y_max + self.y_min) // 2
+from plate_characters_detection.training.model.utils import compose
 
 
 @wraps(Conv2D)

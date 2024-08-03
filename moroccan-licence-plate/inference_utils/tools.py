@@ -6,7 +6,7 @@ import tensorflow as tf
 
 import numpy.typing as npt
 
-from utils.yolo_tools import Bbox
+from plate_characters_detection.training.synthetic_data.classes import Bbox
 
 
 class ImageDetail:
@@ -71,29 +71,5 @@ def get_plate(img, plate_finder):
     img = img[b[n, 1] :b[n, 1],
           b[n, 0]:b[n, 0]]
     return cv2.resize(img, (416, 128))
-
-
-# def prediction_pipeline(model: InferenceSession, plate_finder: InferenceSession, img, metadata):
-#     plate_img = get_plate(img, plate_finder)
-#     plate_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY) / 300  # convet img to grayscale
-#     yolo_outputs = model(np.array([plate_img, plate_img]))
-#     boxes_tensor, scores_tensor, classes_tensor = yolo_eval(yolo_outputs,
-#                                                             np.array(metadata["anchors"]),
-#                                                             metadata["num_classes"],
-#                                                             (metadata["input_height"], metadata["input_width"]),
-#                                                             max_boxes=12,
-#                                                             score_threshold=.5,
-#                                                             iou_threshold=.5
-#                                                             )
-#     bboxes = get_structured_output(boxes_tensor, scores_tensor, classes_tensor, metadata["id_to_label"])
-#     plate_img = plate_img
-#     for box in bboxes:
-#         plate_img = cv2.rectangle(plate_img, (box.bbox.x_min, box.bbox.y_min), (box.bbox.x_max, box.bbox.y_max),
-#                                   (255, 0, 0), 2)
-#     cv2.imshow("show", plate_img)
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()
-#     string, box_coordinates = construct_lines(bboxes)
-#     return string
 
 

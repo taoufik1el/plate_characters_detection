@@ -6,7 +6,7 @@ import yaml
 import onnxruntime as ort
 import numpy.typing as npt
 
-from ml_project.utils.batching import get_image_details, get_raw_batch_plate_detection, get_plate_crops, \
+from plate_characters_detection.inference_utils import get_image_details, get_raw_batch_plate_detection, get_plate_crops, \
     get_raw_character_detection, apply_batch_nms, apply_batch_construct_lines
 
 with open("backup/yolo_model/metadata.yaml", "r") as yaml_file:
