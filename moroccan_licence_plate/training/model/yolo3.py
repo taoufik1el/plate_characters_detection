@@ -15,7 +15,7 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 
-from plate_characters_detection.training.model.utils import compose
+from moroccan_licence_plate.training.model.utils import compose
 
 
 @wraps(Conv2D)

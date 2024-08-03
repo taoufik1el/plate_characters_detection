@@ -12,9 +12,16 @@ from omegaconf import DictConfig
 from tensorflow.keras.utils import Sequence
 from tqdm import tqdm
 
-from plate_characters_detection.training.synthetic_data.classes import OcrObjects, ImageGenerator
-from plate_characters_detection.training.synthetic_data.synthesizer import create_image_and_labels
+
 import numpy.typing as npt
+
+from moroccan_licence_plate.training.synthetic_data.classes import (
+    ImageGenerator,
+    OcrObjects,
+)
+from moroccan_licence_plate.training.synthetic_data.synthesizer import (
+    create_image_and_labels,
+)
 
 
 def compose(*funcs):
@@ -98,7 +105,7 @@ def get_random_data(
 
     image = cv2.resize(image, (nw, nh))
     borderValue = -1
-    new_image = np.ones((h, w))*borderValue #* random.uniform(1, 255)
+    new_image = np.ones((h, w)) * borderValue  # * random.uniform(1, 255)
     new_image[dy : dy + nh, dx : dx + nw] = image
 
     # correct boxes
@@ -127,7 +134,9 @@ def get_random_data(
 
         # Apply Perspective Transform Algorithm
         matrix = cv2.getPerspectiveTransform(pts1, pts2)
-        new_image = cv2.warpPerspective(new_image, matrix, (w, h), borderValue=borderValue)
+        new_image = cv2.warpPerspective(
+            new_image, matrix, (w, h), borderValue=borderValue
+        )
 
         for i in range(len(labels)):
             box_data[i, 0:4] = box_transform(box_data[i, 0:4], matrix)
@@ -293,7 +302,17 @@ class DataGenerator(Sequence):
         image_data = []
         box_data = []
 
-        args = [(i, self.ocr_objects, self.false_characters, self.backgrounds, self.dirt_object, self.input_shape) for i in range(self.batch_size)]
+        args = [
+            (
+                i,
+                self.ocr_objects,
+                self.false_characters,
+                self.backgrounds,
+                self.dirt_object,
+                self.input_shape,
+            )
+            for i in range(self.batch_size)
+        ]
 
         # Multiprocessing pool
         with Pool(processes=self.num_processes) as pool:
@@ -379,6 +398,3 @@ def train_model(
 
         print(f"Loss: {train_loss / n_train}, " f"Test Loss: {test_loss / n_test}, ")
     model.set_weights(best_weights)
-
-
-# get_random_data((128, 416))

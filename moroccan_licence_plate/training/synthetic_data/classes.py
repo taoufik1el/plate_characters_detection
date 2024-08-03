@@ -1,5 +1,4 @@
 import random
-from typing import List, Dict, Optional, Tuple
 
 from pathlib import Path
 
@@ -7,7 +6,10 @@ import numpy as np
 import numpy.typing as npt
 from omegaconf import DictConfig
 
-from plate_characters_detection.training.synthetic_data.utils import generate_from_font, generate_from_crop
+from moroccan_licence_plate.training.synthetic_data.utils import (
+    generate_from_font,
+    generate_from_crop,
+)
 
 FONTS = "fonts"
 CROPS = "crops"
@@ -18,8 +20,8 @@ class OcrObject:
     def __init__(
         self,
         character: str,
-        path_info: Dict[str, List[str]],
-        label_id: Optional[int] = None,
+        path_info: dict[str, list[str]],
+        label_id: int | None = None,
     ):
         self.character = character
         self.font_paths = [
@@ -54,7 +56,7 @@ class OcrObject:
 
 
 class OcrObjects:
-    def __init__(self, ocr_objects: List[OcrObject]):
+    def __init__(self, ocr_objects: list[OcrObject]):
         self.ocr_objects = ocr_objects
 
     @classmethod
@@ -73,7 +75,7 @@ class OcrObjects:
         )[0]
 
     @property
-    def all_labels(self) -> List[int]:
+    def all_labels(self) -> list[int]:
         return [obj.label_id for obj in self.ocr_objects]
 
     @property
@@ -97,7 +99,7 @@ class Bbox:
         y_min,
         height,
         width,
-        safe_coordinates: Optional[Tuple[int, int, int, int]] = None,
+        safe_coordinates: tuple[int, int, int, int] | None = None,
     ):
         self.x_min = max(0, x_min)
         self.y_min = max(0, y_min)

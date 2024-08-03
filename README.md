@@ -28,9 +28,3 @@ For The first step, we will use a trained yolo model to detect the licence plate
 But For the second step, didn't find any annotated dataset or any trained model annotated dataset that can detect digits and arabic characters of the moroccan plates, so we will create our dataset and train a custumize yolo.
 
 For the creation of datasets, we just take random images as backgrounds and write on top of them characters with different [fonts](https://fonts.google.com/) and sizes, then we can use some artifacts (rotations, perspectives, blur, noise ...) in the online data auguementation, then we feed those images to the model.
-
-You can find a full description of the steps in this [notebook](https://github.com/taoufik1el/plate_characters_detection/blob/main/notebooks/plate%20number%20recogition.ipynb)
-
-
-
-The [yolo3](https://github.com/taoufik1el/PLATE_CHARACTER_DETECTION/tree/main/yolo3) file is partially copied from [this repository](https://github.com/qqwweee/keras-yolo3) and modified.

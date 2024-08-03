@@ -1,19 +1,18 @@
 import json
 import random
-from typing import Tuple, List
 
 import cv2
 import numpy as np
 import numpy.typing as npt
 from tqdm import tqdm
 
-from plate_characters_detection.training.synthetic_data.classes import (
+from moroccan_licence_plate.training.synthetic_data.classes import (
     ImageGenerator,
     Bbox,
     OcrObjects,
     CharacterAnnotation,
 )
-from plate_characters_detection.training.synthetic_data.utils import (
+from moroccan_licence_plate.training.synthetic_data.utils import (
     black_area_intersection,
     write_bool_on_background,
     write_negative_bool_on_image,
@@ -63,8 +62,8 @@ def draw_shape(
 def generate_aligned_boxes(
     ocr_objects: OcrObjects,
     false_characters: OcrObjects,
-    background_shape: Tuple[int, ...],
-) -> Tuple[List[CharacterAnnotation], List[CharacterAnnotation]]:
+    background_shape: tuple[int, ...],
+) -> tuple[list[CharacterAnnotation], list[CharacterAnnotation]]:
     """generate boxes with random dimensions and positions, and associating labels to them."""
     background_h, background_w = background_shape[:2]
     bbox_h = random.randrange(44, 60)
@@ -109,9 +108,9 @@ def generate_aligned_boxes(
 def generate_random_boxes(
     ocr_objects: OcrObjects,
     false_characters: OcrObjects,
-    background_shape: Tuple[int, ...],
+    background_shape: tuple[int, ...],
     n: int,
-) -> Tuple[List[CharacterAnnotation], List[CharacterAnnotation]]:
+) -> tuple[list[CharacterAnnotation], list[CharacterAnnotation]]:
     """generate boxes with random dimensions and positions, and associating labels to them."""
     background_h, background_w = background_shape[:2]
     character_annotations = []
@@ -152,7 +151,7 @@ def create_image_and_labels(
     false_characters: OcrObjects,
     backgrounds: ImageGenerator,
     dirt_object: ImageGenerator,
-) -> Tuple[npt.NDArray[np.any], List[CharacterAnnotation]]:
+) -> tuple[npt.NDArray[np.any], list[CharacterAnnotation]]:
     background = backgrounds.generate_image()
     background = cv2.resize(background, (450, 170))
     if get_random_bool_choice(0.5, 0.5):

@@ -41,7 +41,11 @@ def create_tiny_model(anchors, num_classes):
     return model_body
 
 
-@hydra.main(version_base=None, config_path="moroccan-licence-plate/training/config", config_name="train")
+@hydra.main(
+    version_base=None,
+    config_path="config",
+    config_name="train",
+)
 def train(cfg: DictConfig):
     anchors = np.array(cfg.anchors)
 
@@ -63,7 +67,10 @@ def train(cfg: DictConfig):
         **cfg.data,
     )
     num_classes = train_data_generator.num_classes
-    id_to_label = {ocr_object.label_id: ocr_object.character for ocr_object in train_data_generator.ocr_objects.ocr_objects}
+    id_to_label = {
+        ocr_object.label_id: ocr_object.character
+        for ocr_object in train_data_generator.ocr_objects.ocr_objects
+    }
     if is_tiny_version:
         model = create_tiny_model(anchors, num_classes)
     else:
@@ -83,9 +90,16 @@ def train(cfg: DictConfig):
     )
     if cfg.save_model.save:
         model.save(os.path.join(cfg.save_model.save_path, "model"))
-        metadata = {"anchors": list(map(list, cfg.anchors)), "num_classes": train_data_generator.num_classes,
-                    "id_to_label": id_to_label, "input_height": input_shape[0], "input_width": input_shape[1]}
-        with open(os.path.join(cfg.save_model.save_path, "metadata.yaml"), "w") as yaml_file:
+        metadata = {
+            "anchors": list(map(list, cfg.anchors)),
+            "num_classes": train_data_generator.num_classes,
+            "id_to_label": id_to_label,
+            "input_height": input_shape[0],
+            "input_width": input_shape[1],
+        }
+        with open(
+            os.path.join(cfg.save_model.save_path, "metadata.yaml"), "w"
+        ) as yaml_file:
             yaml.dump(metadata, yaml_file, default_flow_style=False)
     return model
 
