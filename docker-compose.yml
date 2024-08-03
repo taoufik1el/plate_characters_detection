@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ml_project:
+    build:
+      context: ./ml_project
+    ports:
+      - "5000:5000" # Change the port if needed
+    volumes:
+      - ./ml_project:/app
+    environment:
+      - PYTHONPATH=/app
+
+  web_app:
+    build:
+      context: ./web_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./web_app:/app

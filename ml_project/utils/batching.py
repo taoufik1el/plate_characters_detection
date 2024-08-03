@@ -1,11 +1,17 @@
+import logging
 from typing import List
 
 import numpy as np
 import numpy.typing as npt
 
-from model.yolo3 import yolo_eval
-from post_processing.tools import preprocess_image_for_plate_detection, ImageDetail, get_crop, get_structured_output
+
 import tensorflow as tf
+
+from utils.tools import ImageDetail, preprocess_image_for_plate_detection, get_crop, get_structured_output, OutputBox, \
+    construct_lines
+
+from utils.yolo_tools import yolo_eval
+
 
 def get_image_details(images: List[npt.NDArray[np.uint8]]) -> List[ImageDetail]:
     return [ImageDetail(img.shape[:2], img) for img in images]
@@ -14,6 +20,7 @@ def get_image_details(images: List[npt.NDArray[np.uint8]]) -> List[ImageDetail]:
 def get_raw_batch_plate_detection(plate_detector, image_details: List[ImageDetail]):
     input_images = [preprocess_image_for_plate_detection(image_detail.image_raw) for image_detail in image_details]
     input_tensor = np.vstack(input_images)
+    logging.debug(f"Received data: {input_tensor.shape}")
     raw_boxes, raw_scores, _, _, image_indexes = plate_detector.run(None, {"images": input_tensor})
     return raw_boxes, raw_scores, image_indexes
 
@@ -23,7 +30,7 @@ def get_plate_crops(raw_boxes: npt.NDArray[np.float64], raw_scores: npt.NDArray[
     crops = []
     for raw_box, img_detail in zip(raw_boxes[0].tolist(), duplicated_images):
         crops.append(get_crop(raw_box, img_detail))
-    return np.array(crops), raw_scores[0].tolist()
+    return np.array(crops).astype(np.float32), raw_scores[0].tolist()
 
 
 def get_raw_character_detection(character_detector, plate_crops: List[npt.NDArray[np.float64]]):
@@ -51,6 +58,10 @@ def apply_batch_nms(raw_tensor_output, metadata):
     return bvl_boxes
 
 
-# TensorShape([1, 4, 13, 81])
+def apply_batch_construct_lines(bvl_boxes: List[List[OutputBox]]):
+    constructed_lines = []
+    for line in bvl_boxes:
+        constructed_lines.append(construct_lines(line)[0])
+    return constructed_lines
 
 

@@ -1,10 +1,20 @@
 import random
 from functools import reduce
+from multiprocessing import Pool
+from typing import Tuple
 
 import cv2
 import numpy as np
 import tensorflow as tf
+from pathlib import Path
+
+from omegaconf import DictConfig
 from tensorflow.keras.utils import Sequence
+from tqdm import tqdm
+
+from training.synthetic_data.classes import OcrObjects, ImageGenerator
+from training.synthetic_data.synthesizer import create_image_and_labels
+import numpy.typing as npt
 
 
 def compose(*funcs):
@@ -47,18 +57,37 @@ def gauss_noise(image, mean=0, var=0.001):
     return out
 
 
-def rand(a=0, b=1):
+def rand(a=0.0, b=1.0):
     return np.random.rand() * (b - a) + a
 
 
-def get_random_data(images, df, annotation_index, input_shape, max_boxes=12):
+def get_random_data(
+    ocr_objects: OcrObjects,
+    false_characters: OcrObjects,
+    backgrounds: ImageGenerator,
+    dirt_object: ImageGenerator,
+    input_shape,
+    max_boxes=12,
+):
     """random preprocessing for real-time data augmentation"""
-    annotation_line = df[df.id == annotation_index]["annotations"][annotation_index]
-    image = images[annotation_index]
-    line = annotation_line.split()  # df.loc[l,'annotation']
-    ih, iw = image.shape  # image.shape
+    image, annotation = create_image_and_labels(
+        ocr_objects, false_characters, backgrounds, dirt_object
+    )
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    labels = np.array(
+        [
+            [
+                label.bbox.y_min,
+                label.bbox.x_min,
+                label.bbox.y_max,
+                label.bbox.x_max,
+                label.ocr_object.label_id,
+            ]
+            for label in annotation
+        ]
+    )
+    ih, iw = image.shape[:2]  # image.shape
     h, w = input_shape
-    box = np.array([np.array(list(map(int, box.split(",")))) for box in line[0:]])
 
     # resize image
     scale = min(w / iw, h / ih)
@@ -68,18 +97,19 @@ def get_random_data(images, df, annotation_index, input_shape, max_boxes=12):
     dy = random.randrange(0, h - nh + 1)
 
     image = cv2.resize(image, (nw, nh))
-    new_image = np.ones((h, w)) * random.uniform(1, 255)
+    borderValue = -1
+    new_image = np.ones((h, w))*borderValue #* random.uniform(1, 255)
     new_image[dy : dy + nh, dx : dx + nw] = image
 
     # correct boxes
     box_data = np.zeros((max_boxes, 5))
-    if len(box) > 0:
-        np.random.shuffle(box)
-        if len(box) > max_boxes:
-            box = box[:max_boxes]
-        box[:, [0, 2]] = box[:, [0, 2]] * scale + dy
-        box[:, [1, 3]] = box[:, [1, 3]] * scale + dx
-        box_data[: len(box)] = box
+    if len(labels) > 0:
+        np.random.shuffle(labels)
+        if len(labels) > max_boxes:
+            labels = labels[:max_boxes]
+        labels[:, [0, 2]] = labels[:, [0, 2]] * scale + dy
+        labels[:, [1, 3]] = labels[:, [1, 3]] * scale + dx
+        box_data[: len(labels)] = labels
 
     if random.choices([True, False], [4 / 5, 1 / 5])[0]:
         r = [rand(0, 30) for i in range(4)]
@@ -97,10 +127,14 @@ def get_random_data(images, df, annotation_index, input_shape, max_boxes=12):
 
         # Apply Perspective Transform Algorithm
         matrix = cv2.getPerspectiveTransform(pts1, pts2)
-        new_image = cv2.warpPerspective(new_image, matrix, (w, h))
+        new_image = cv2.warpPerspective(new_image, matrix, (w, h), borderValue=borderValue)
 
-        for i in range(len(box)):
+        for i in range(len(labels)):
             box_data[i, 0:4] = box_transform(box_data[i, 0:4], matrix)
+
+    background_image = cv2.resize(backgrounds.generate_image(), (w, h))
+    background_image = cv2.cvtColor(background_image, cv2.COLOR_BGR2GRAY)
+    new_image = np.where(new_image != borderValue, new_image, background_image)
 
     # Apply blure
     if random.choices([True, False], [4 / 5, 1 / 5])[0]:
@@ -138,14 +172,14 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
         np.zeros(
             (
                 m,
-                grid_shapes[l][0],
-                grid_shapes[l][1],
-                len(anchor_mask[l]),
+                grid_shapes[layer_id][0],
+                grid_shapes[layer_id][1],
+                len(anchor_mask[layer_id]),
                 5 + num_classes,
             ),
             dtype="float32",
         )
-        for l in range(num_layers)
+        for layer_id in range(num_layers)
     ]
     # Expand dim to apply broadcasting.
     anchors = np.expand_dims(anchors, 0)
@@ -192,67 +226,84 @@ def preprocess_true_boxes(true_boxes, input_shape, anchors, num_classes):
     return y_true
 
 
+def generate_data(args):
+    """
+    Function to be executed in parallel.
+    This function is defined outside the class to avoid pickling issues.
+    """
+    index, ocr_objects, false_characters, backgrounds, dirt_object, input_shape = args
+    image, box = get_random_data(
+        ocr_objects,
+        false_characters,
+        backgrounds,
+        dirt_object,
+        input_shape,
+    )
+    return image, box
+
+
 class DataGenerator(Sequence):
-    "Generates data for Keras"
+    """Generates data for Keras"""
 
     def __init__(
         self,
-        list_IDs,
-        images,
-        df,
-        anchors,
-        num_classes,
-        batch_size=32,
-        input_shape=(128, 416),
-        shuffle=True,
+        ocr_objects: DictConfig,
+        false_characters: DictConfig,
+        dirt_objects_file: str,
+        backgrounds_path: str,
+        n_batches: int,
+        anchors: npt.NDArray[np.int8],
+        batch_size: int = 32,
+        input_shape: Tuple[int, int] = (128, 416),
+        num_processes: int = 12,
     ):
-        "Initialization"
-        self.list_IDs = list_IDs
-        self.images = images
-        self.df = df
+        """Initialization"""
+        self.n_batches = n_batches
         self.batch_size = batch_size
         self.input_shape = input_shape
         self.anchors = anchors
-        self.num_classes = num_classes
-        self.shuffle = shuffle
+        self.num_processes = num_processes
+
+        self.ocr_objects = OcrObjects.from_json(ocr_objects)
+        self.num_classes = self.ocr_objects.num_classes
+
+        self.false_characters = OcrObjects.from_json(false_characters)
+
+        self.backgrounds = ImageGenerator(Path(backgrounds_path))
+        self.dirt_object = ImageGenerator(Path(dirt_objects_file))
         self.on_epoch_end()
 
     def __len__(self):
-        "Denotes the number of batches per epoch"
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        """Denotes the number of batches per epoch"""
+        return int(self.n_batches)
 
     def __getitem__(self, index):
-        "Generate one batch of data"
-        # Generate indexes of the batch
-        indexes = self.indexes[index * self.batch_size : (index + 1) * self.batch_size]
+        """Generate one batch of data"""
+        x, y = self.__data_generation()
 
-        # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
-
-        # Generate data
-        X, y = self.__data_generation(list_IDs_temp)
-
-        return X, y
+        return x, y
 
     def on_epoch_end(self):
-        "Updates indexes after each epoch"
-        self.indexes = np.arange(len(self.list_IDs))
-        if self.shuffle:
-            np.random.shuffle(self.indexes)
+        """Updates indexes after each epoch"""
+        pass
 
-    def __data_generation(self, list_IDs_temp):
-        "Generates data containing batch_size samples"  # X : (n_samples, *dim, n_channels)
+    def __data_generation(self):
+        """Generates data containing batch_size samples."""  # X : (n_samples, *dim, n_channels)
         # Initialization
         image_data = []
         box_data = []
 
-        # Generate data
-        for i, ID in enumerate(list_IDs_temp):
-            image, box = get_random_data(
-                self.images, self.df, list_IDs_temp[i], self.input_shape
-            )
-            image_data.append(image)
-            box_data.append(box)
+        args = [(i, self.ocr_objects, self.false_characters, self.backgrounds, self.dirt_object, self.input_shape) for i in range(self.batch_size)]
+
+        # Multiprocessing pool
+        with Pool(processes=self.num_processes) as pool:
+            results = pool.map(generate_data, args)
+
+        # Collect results
+        for result in results:
+            image_data.append(result[0])
+            box_data.append(result[1])
+
         image_data = np.array(image_data)
         box_data = np.array(box_data)
         y_true = preprocess_true_boxes(
@@ -264,7 +315,7 @@ class DataGenerator(Sequence):
 
 def train_model(
     model,
-    EPOCHS,
+    epochs,
     lr0,
     loss_object,
     train_data_generator,
@@ -301,18 +352,22 @@ def train_model(
     best_weights = model.get_weights()
     lr = lr0
     epoch = 1
-    while epoch <= EPOCHS and epoch - best_epoch <= early_stopping["patience"]:
+    while epoch <= epochs and epoch - best_epoch <= early_stopping["patience"]:
         print(f"Epoch {epoch}, ")
         if epoch - best_epoch >= reduce_lr["patience"]:
             lr = lr * reduce_lr["factor"]
             print("learning rate reduced to ", lr)
         train_loss, n_train = 0, 0
         test_loss, n_test = 0, 0
-        for images, labels in train_data_generator:
+        for images, labels in tqdm(
+            train_data_generator, desc=f"Training on epoch {epoch}"
+        ):
             train_loss += train_step(images, labels, lr)
             n_train += 1
 
-        for test_images, test_labels in test_data_generator:
+        for test_images, test_labels in tqdm(
+            test_data_generator, desc=f"Validation of epoch {epoch}"
+        ):
             test_loss += test_step(test_images, test_labels)
             n_test += 1
         if test_loss / n_test < best_score:
@@ -324,3 +379,6 @@ def train_model(
 
         print(f"Loss: {train_loss / n_train}, " f"Test Loss: {test_loss / n_test}, ")
     model.set_weights(best_weights)
+
+
+# get_random_data((128, 416))

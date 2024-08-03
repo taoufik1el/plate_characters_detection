@@ -15,7 +15,7 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 
-from model.utils import compose
+from training.model.utils import compose
 
 
 @wraps(Conv2D)

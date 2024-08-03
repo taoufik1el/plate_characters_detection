@@ -1,5 +1,4 @@
 """Retrain the YOLO model for your own dataset."""
-import json
 import os
 
 import hydra
@@ -9,8 +8,8 @@ import yaml
 from omegaconf import DictConfig
 from tensorflow.keras.layers import Input
 
-from model.yolo3 import yolo_body, tiny_yolo_body, define_loss
-from model.utils import DataGenerator, train_model
+from training.model.utils import DataGenerator, train_model
+from training import yolo_body, tiny_yolo_body, define_loss
 
 
 def get_anchors(anchors_line):
@@ -42,7 +41,7 @@ def create_tiny_model(anchors, num_classes):
     return model_body
 
 
-@hydra.main(version_base=None, config_path="config", config_name="train")
+@hydra.main(version_base=None, config_path="training/config", config_name="train")
 def train(cfg: DictConfig):
     anchors = np.array(cfg.anchors)
 

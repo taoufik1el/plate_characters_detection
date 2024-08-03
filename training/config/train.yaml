@@ -6,7 +6,7 @@ input_shape:  # multiple of 32
   width: 416
 n_batches: 1500
 batch_size: 32
-epochs: 50
+epochs: 10
 optimizer:
   lr: 0.001
   reduce_lr:

@@ -1,5 +1,5 @@
-from functools import wraps
-from typing import Tuple
+from typing import Optional, Tuple
+from functools import wraps, reduce
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -16,26 +16,72 @@ from tensorflow.keras.layers import LeakyReLU
 from tensorflow.keras.models import Model
 from tensorflow.keras.regularizers import l2
 
-from yolo3.utils import compose
+
+def compose(*funcs):
+    """Compose arbitrarily many functions, evaluated left to right.
+    Reference: https://mathieularose.com/function-composition-in-python/
+    """
+    # return lambda x: reduce(lambda v, f: f(v), funcs, x)
+    if funcs:
+        return reduce(lambda f, g: lambda *a, **kw: g(f(*a, **kw)), funcs)
+    else:
+        raise ValueError("Composition of empty sequence not supported.")
+
+
+class Bbox:
+    def __init__(
+        self,
+        x_min,
+        y_min,
+        height,
+        width,
+        safe_coordinates: Optional[Tuple[int, int, int, int]] = None,
+    ):
+        self.x_min = max(0, x_min)
+        self.y_min = max(0, y_min)
+        self.height = height
+        self.width = width
+        if safe_coordinates:
+            safe_xmin, safe_ymin, safe_xmax, safe_ymax = safe_coordinates
+            self.x_min = max(self.x_min, safe_xmin)
+            self.y_min = max(self.y_min, safe_ymin)
+            self.height = min(self.y_min + self.height, safe_ymax) - self.y_min
+            self.width = min(self.x_min + self.width, safe_xmax) - self.x_min
+
+    @property
+    def x_max(self):
+        return self.x_min + self.width
+
+    @property
+    def y_max(self):
+        return self.y_min + self.height
+
+    @property
+    def coordinates(self):
+        return self.x_min, self.x_max, self.y_min, self.y_max
+
+    @property
+    def centroid(self):
+        return (self.x_max + self.x_min) // 2, (self.y_max + self.y_min) // 2
 
 
 @wraps(Conv2D)
-def DarknetConv2D(*args, **kwargs):
+def darknet_conv2_d(*args, **kwargs):
     """Wrapper to set Darknet parameters for Convolution2D."""
-    darknet_conv_kwargs = {"kernel_regularizer": l2(5e-4)}
-    darknet_conv_kwargs["padding"] = (
-        "valid" if kwargs.get("strides") == (2, 2) else "same"
-    )
+    darknet_conv_kwargs = {
+        "kernel_regularizer": l2(5e-4),
+        "padding": "valid" if kwargs.get("strides") == (2, 2) else "same",
+    }
     darknet_conv_kwargs.update(kwargs)
     return Conv2D(*args, **darknet_conv_kwargs)
 
 
-def DarknetConv2D_BN_Leaky(*args, **kwargs):
+def darknet_conv2_d_bn_leaky(*args, **kwargs):
     """Darknet Convolution2D followed by BatchNormalization and LeakyReLU."""
     no_bias_kwargs = {"use_bias": False}
     no_bias_kwargs.update(kwargs)
     return compose(
-        DarknetConv2D(*args, **no_bias_kwargs),
+        darknet_conv2_d(*args, **no_bias_kwargs),
         BatchNormalization(),
         LeakyReLU(alpha=0.1),
     )
@@ -45,11 +91,11 @@ def resblock_body(x, num_filters, num_blocks):
     """A series of resblocks starting with a downsampling Convolution2D"""
     # Darknet uses left and top padding instead of 'same' mode
     x = ZeroPadding2D(((1, 0), (1, 0)))(x)
-    x = DarknetConv2D_BN_Leaky(num_filters, (3, 3), strides=(2, 2))(x)
+    x = darknet_conv2_d_bn_leaky(num_filters, (3, 3), strides=(2, 2))(x)
     for i in range(num_blocks):
         y = compose(
-            DarknetConv2D_BN_Leaky(num_filters // 2, (1, 1)),
-            DarknetConv2D_BN_Leaky(num_filters, (3, 3)),
+            darknet_conv2_d_bn_leaky(num_filters // 2, (1, 1)),
+            darknet_conv2_d_bn_leaky(num_filters, (3, 3)),
         )(x)
         x = Add()([x, y])
     return x
@@ -57,7 +103,7 @@ def resblock_body(x, num_filters, num_blocks):
 
 def darknet_body(x):
     """Darknent body having 52 Convolution2D layers"""
-    x = DarknetConv2D_BN_Leaky(32, (3, 3))(x)
+    x = darknet_conv2_d_bn_leaky(32, (3, 3))(x)
     x = resblock_body(x, 64, 1)
     x = resblock_body(x, 128, 2)
     x = resblock_body(x, 256, 8)
@@ -69,15 +115,15 @@ def darknet_body(x):
 def make_last_layers(x, num_filters, out_filters):
     """6 Conv2D_BN_Leaky layers followed by a Conv2D_linear layer"""
     x = compose(
-        DarknetConv2D_BN_Leaky(num_filters, (1, 1)),
-        DarknetConv2D_BN_Leaky(num_filters * 2, (3, 3)),
-        DarknetConv2D_BN_Leaky(num_filters, (1, 1)),
-        DarknetConv2D_BN_Leaky(num_filters * 2, (3, 3)),
-        DarknetConv2D_BN_Leaky(num_filters, (1, 1)),
+        darknet_conv2_d_bn_leaky(num_filters, (1, 1)),
+        darknet_conv2_d_bn_leaky(num_filters * 2, (3, 3)),
+        darknet_conv2_d_bn_leaky(num_filters, (1, 1)),
+        darknet_conv2_d_bn_leaky(num_filters * 2, (3, 3)),
+        darknet_conv2_d_bn_leaky(num_filters, (1, 1)),
     )(x)
     y = compose(
-        DarknetConv2D_BN_Leaky(num_filters * 2, (3, 3)),
-        DarknetConv2D(out_filters, (1, 1)),
+        darknet_conv2_d_bn_leaky(num_filters * 2, (3, 3)),
+        darknet_conv2_d(out_filters, (1, 1)),
     )(x)
     return x, y
 
@@ -87,11 +133,11 @@ def yolo_body(inputs, num_anchors, num_classes):
     darknet = Model(inputs, darknet_body(inputs))
     x, y1 = make_last_layers(darknet.output, 512, num_anchors * (num_classes + 5))
 
-    x = compose(DarknetConv2D_BN_Leaky(256, (1, 1)), UpSampling2D(2))(x)
+    x = compose(darknet_conv2_d_bn_leaky(256, (1, 1)), UpSampling2D(2))(x)
     x = Concatenate()([x, darknet.layers[152].output])
     x, y2 = make_last_layers(x, 256, num_anchors * (num_classes + 5))
 
-    x = compose(DarknetConv2D_BN_Leaky(128, (1, 1)), UpSampling2D(2))(x)
+    x = compose(darknet_conv2_d_bn_leaky(128, (1, 1)), UpSampling2D(2))(x)
     x = Concatenate()([x, darknet.layers[92].output])
     x, y3 = make_last_layers(x, 128, num_anchors * (num_classes + 5))
 
@@ -101,33 +147,33 @@ def yolo_body(inputs, num_anchors, num_classes):
 def tiny_yolo_body(inputs, num_anchors, num_classes):
     """Create Tiny YOLO_v3 model CNN body in keras."""
     x1 = compose(
-        DarknetConv2D_BN_Leaky(16, (3, 3)),
+        darknet_conv2_d_bn_leaky(16, (3, 3)),
         MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
-        DarknetConv2D_BN_Leaky(32, (3, 3)),
+        darknet_conv2_d_bn_leaky(32, (3, 3)),
         MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
-        DarknetConv2D_BN_Leaky(64, (3, 3)),
+        darknet_conv2_d_bn_leaky(64, (3, 3)),
         MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
-        DarknetConv2D_BN_Leaky(128, (3, 3)),
+        darknet_conv2_d_bn_leaky(128, (3, 3)),
         MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
-        DarknetConv2D_BN_Leaky(256, (3, 3)),
+        darknet_conv2_d_bn_leaky(256, (3, 3)),
     )(inputs)
     x2 = compose(
         MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding="same"),
-        DarknetConv2D_BN_Leaky(512, (3, 3)),
+        darknet_conv2_d_bn_leaky(512, (3, 3)),
         MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding="same"),
-        DarknetConv2D_BN_Leaky(1024, (3, 3)),
-        DarknetConv2D_BN_Leaky(256, (1, 1)),
+        darknet_conv2_d_bn_leaky(1024, (3, 3)),
+        darknet_conv2_d_bn_leaky(256, (1, 1)),
     )(x1)
     y1 = compose(
-        DarknetConv2D_BN_Leaky(512, (3, 3)),
-        DarknetConv2D(num_anchors * (num_classes + 5), (1, 1)),
+        darknet_conv2_d_bn_leaky(512, (3, 3)),
+        darknet_conv2_d(num_anchors * (num_classes + 5), (1, 1)),
     )(x2)
 
-    x2 = compose(DarknetConv2D_BN_Leaky(128, (1, 1)), UpSampling2D(2))(x2)
+    x2 = compose(darknet_conv2_d_bn_leaky(128, (1, 1)), UpSampling2D(2))(x2)
     y2 = compose(
         Concatenate(),
-        DarknetConv2D_BN_Leaky(256, (3, 3)),
-        DarknetConv2D(num_anchors * (num_classes + 5), (1, 1)),
+        darknet_conv2_d_bn_leaky(256, (3, 3)),
+        darknet_conv2_d(num_anchors * (num_classes + 5), (1, 1)),
     )([x2, x1])
 
     return Model(inputs, [y1, y2])
@@ -218,7 +264,7 @@ def yolo_eval(
     max_boxes=12,
     score_threshold=0.6,  # 0.5
     iou_threshold=0.5,
-) -> Tuple[tf.Tensor, ...]:
+):
     """Evaluate YOLO model on given input and return filtered boxes."""
     num_layers = len(yolo_outputs)
     anchor_mask = (

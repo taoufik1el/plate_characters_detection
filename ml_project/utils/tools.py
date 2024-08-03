@@ -3,11 +3,10 @@ from typing import List, Dict, Tuple
 import cv2
 import numpy as np
 import tensorflow as tf
-from onnxruntime import InferenceSession
 
-from synthetic_data.classes import Bbox
-from yolo3.model import yolo_eval
 import numpy.typing as npt
+
+from utils.yolo_tools import Bbox
 
 
 class ImageDetail:
@@ -39,8 +38,8 @@ def get_crop(raw_box: List[float],
     image_height, image_weight = img_detail.image_shape
     x, w = round(x * image_weight / 640), round(w * image_weight / 640)
     y, h = round(y * image_height / 640), round(h * image_height / 640)
-    y_offset = int(h/2 + 0.3*h)
-    x_offset = int(w/2 + 0.4*h)
+    y_offset = round(h/2)
+    x_offset = round(w/2)
     crop = img_detail.image_raw[y - y_offset:y + y_offset, x - x_offset:x + x_offset].copy()
     crop = cv2.resize(crop, crop_size)
     crop = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY) / normalise_factor
@@ -48,7 +47,7 @@ def get_crop(raw_box: List[float],
 
 
 def get_structured_output(boxes_tensor: tf.Tensor, scores_tensor: tf.Tensor, classes_tensor: tf.Tensor,
-                          id_to_label: Dict[int, str]):
+                          id_to_label: Dict[int, str]) -> List[OutputBox]:
     bboxes = []
     for box_tensor, score_tensor, classe_tensor in zip(boxes_tensor.numpy(), scores_tensor.numpy(),
                                                        classes_tensor.numpy()):
@@ -58,14 +57,10 @@ def get_structured_output(boxes_tensor: tf.Tensor, scores_tensor: tf.Tensor, cla
     return bboxes
 
 
-def construct_lines(bboxes: List[OutputBox], fraction: float = 1.0):
-    first_box = min(bboxes, key=lambda x: x.bbox.y_min)
-    h = first_box.bbox.height
-    y_range = (first_box.bbox.centroid[1] - (h * fraction) // 2, first_box.bbox.centroid[1] + (h * fraction) // 2)
-    first_aligned_boxes = sorted([box for box in bboxes if y_range[0] <= box.bbox.centroid[1] <= y_range[1]],
-                                 key=lambda x: x.bbox.x_min)
-    string = " ".join([box.character for box in first_aligned_boxes])
-    box_coordinates = [box.bbox.coordinates for box in first_aligned_boxes]
+def construct_lines(bboxes: List[OutputBox]):
+    sorted_boxes = sorted(bboxes, key=lambda x: x.bbox.x_min)
+    string = " ".join([box.character for box in sorted_boxes])
+    box_coordinates = [box.bbox.coordinates for box in sorted_boxes]
     return string, box_coordinates
 
 
@@ -78,27 +73,27 @@ def get_plate(img, plate_finder):
     return cv2.resize(img, (416, 128))
 
 
-def prediction_pipeline(model: InferenceSession, plate_finder: InferenceSession, img, metadata):
-    plate_img = get_plate(img, plate_finder)
-    plate_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY) / 300  # convet img to grayscale
-    yolo_outputs = model(np.array([plate_img, plate_img]))
-    boxes_tensor, scores_tensor, classes_tensor = yolo_eval(yolo_outputs,
-                                                            np.array(metadata["anchors"]),
-                                                            metadata["num_classes"],
-                                                            (metadata["input_height"], metadata["input_width"]),
-                                                            max_boxes=12,
-                                                            score_threshold=.5,
-                                                            iou_threshold=.5
-                                                            )
-    bboxes = get_structured_output(boxes_tensor, scores_tensor, classes_tensor, metadata["id_to_label"])
-    plate_img = plate_img
-    for box in bboxes:
-        plate_img = cv2.rectangle(plate_img, (box.bbox.x_min, box.bbox.y_min), (box.bbox.x_max, box.bbox.y_max),
-                                  (255, 0, 0), 2)
-    cv2.imshow("show", plate_img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    string, box_coordinates = construct_lines(bboxes)
-    return string
+# def prediction_pipeline(model: InferenceSession, plate_finder: InferenceSession, img, metadata):
+#     plate_img = get_plate(img, plate_finder)
+#     plate_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY) / 300  # convet img to grayscale
+#     yolo_outputs = model(np.array([plate_img, plate_img]))
+#     boxes_tensor, scores_tensor, classes_tensor = yolo_eval(yolo_outputs,
+#                                                             np.array(metadata["anchors"]),
+#                                                             metadata["num_classes"],
+#                                                             (metadata["input_height"], metadata["input_width"]),
+#                                                             max_boxes=12,
+#                                                             score_threshold=.5,
+#                                                             iou_threshold=.5
+#                                                             )
+#     bboxes = get_structured_output(boxes_tensor, scores_tensor, classes_tensor, metadata["id_to_label"])
+#     plate_img = plate_img
+#     for box in bboxes:
+#         plate_img = cv2.rectangle(plate_img, (box.bbox.x_min, box.bbox.y_min), (box.bbox.x_max, box.bbox.y_max),
+#                                   (255, 0, 0), 2)
+#     cv2.imshow("show", plate_img)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+#     string, box_coordinates = construct_lines(bboxes)
+#     return string
 
 
