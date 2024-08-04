@@ -1,5 +1,3 @@
-import logging
-
 import numpy as np
 import numpy.typing as npt
 
@@ -21,13 +19,16 @@ def get_image_details(images: list[npt.NDArray[np.uint8]]) -> list[ImageDetail]:
     return [ImageDetail(img.shape[:2], img) for img in images]
 
 
-def get_raw_batch_plate_detection(plate_detector, image_details: list[ImageDetail]):
+def get_tensor(image_details: list[ImageDetail]) -> npt.NDArray[np.float32]:
     input_images = [
         preprocess_image_for_plate_detection(image_detail.image_raw)
         for image_detail in image_details
     ]
     input_tensor = np.vstack(input_images)
-    logging.debug(f"Received data: {input_tensor.shape}")
+    return input_tensor
+
+
+def get_raw_batch_plate_detection(plate_detector, input_tensor):
     raw_boxes, raw_scores, _, _, image_indexes = plate_detector.run(
         None, {"images": input_tensor}
     )
