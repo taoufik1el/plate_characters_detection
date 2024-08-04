@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="moroccan-licence-plate",
-    version="0.1.0",
+    version="0.1.1",
     author="Taoufik El Khaouja",
     author_email="el1khaouja.taoufik@gmail.com",
     description="Detection and recognition of moroccan car licence plates.",
