@@ -1,8 +1,14 @@
 from setuptools import setup, find_packages
 
+
+def read_requirements():
+    with open('requirements.txt') as f:
+        return f.read().splitlines()
+
+
 setup(
     name="moroccan-licence-plate",
-    version="0.1.1",
+    version="0.1.2",
     author="Taoufik El Khaouja",
     author_email="el1khaouja.taoufik@gmail.com",
     description="Detection and recognition of moroccan car licence plates.",
@@ -16,4 +22,5 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.11",
+    install_requires=read_requirements(),
 )
